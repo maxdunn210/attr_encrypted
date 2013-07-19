@@ -136,6 +136,12 @@ module AttrEncrypted
         value.respond_to?(:empty?) ? !value.empty? : !!value
       end
 
+      # MD Dec-2012. Check first in case we rolled back the encrypted fields
+      # MD Jan-2013. Also check that the table exists in case we dropped all tables and are migrating up
+      if ActiveRecord::Base.connection.tables.include?(self.table_name) && column_names.include?("encrypted_#{attribute}")
+        alias_method "#{attribute}_changed?", "encrypted_#{attribute}_changed?"
+      end
+
       encrypted_attributes[attribute.to_sym] = options.merge(:attribute => encrypted_attribute_name)
     end
   end
@@ -199,6 +205,13 @@ module AttrEncrypted
   #
   #   encrypted_email = User.encrypt(:email, 'test@example.com')
   def encrypt(attribute, value, options = {})
+    # MD Dec-2012. If :key is not a string, then it is being called by a "find_by" method. In this
+    # case get the logged in users tenant key and use that for the find.
+    unless options[:key].is_a?(String)
+      tenant_id = Tenant.current_tenant && Tenant.current_tenant.id
+      options[:key] = TenantEncryption.tenants_current_encryption_key(tenant_id)
+    end
+
     options = encrypted_attributes[attribute.to_sym].merge(options)
     if options[:if] && !options[:unless] && !value.nil? && !(value.is_a?(String) && value.empty?)
       value = options[:marshal] ? options[:marshaler].send(options[:dump_method], value) : value.to_s

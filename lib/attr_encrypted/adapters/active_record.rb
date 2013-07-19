@@ -11,7 +11,7 @@ if defined?(ActiveRecord::Base)
 
         protected
 
-          # Ensures the attribute methods for db fields have been defined before calling the original 
+          # Ensures the attribute methods for db fields have been defined before calling the original
           # <tt>attr_encrypted</tt> method
           def attr_encrypted(*attrs)
             define_attribute_methods rescue nil
@@ -19,12 +19,12 @@ if defined?(ActiveRecord::Base)
             attrs.reject { |attr| attr.is_a?(Hash) }.each { |attr| alias_method "#{attr}_before_type_cast", attr }
           end
 
-          # Allows you to use dynamic methods like <tt>find_by_email</tt> or <tt>scoped_by_email</tt> for 
+          # Allows you to use dynamic methods like <tt>find_by_email</tt> or <tt>scoped_by_email</tt> for
           # encrypted attributes
           #
           # NOTE: This only works when the <tt>:key</tt> option is specified as a string (see the README)
           #
-          # This is useful for encrypting fields like email addresses. Your user's email addresses 
+          # This is useful for encrypting fields like email addresses. Your user's email addresses
           # are encrypted in the database, but you can still look up a user by email for logging in
           #
           # Example
@@ -41,7 +41,7 @@ if defined?(ActiveRecord::Base)
               attribute_names = match.captures.last.split('_and_')
               attribute_names.each_with_index do |attribute, index|
                 if attr_encrypted?(attribute)
-                  args[index] = send("encrypt_#{attribute}", args[index])
+                  args[index] = encrypt(attribute, args[index])
                   attribute_names[index] = encrypted_attributes[attribute.to_sym][:attribute]
                 end
               end
