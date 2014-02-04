@@ -205,9 +205,15 @@ module AttrEncrypted
   #   email = User.decrypt(:email, 'SOME_ENCRYPTED_EMAIL_STRING')
   def decrypt(attribute, encrypted_value, options = {})
     options = encrypted_attributes[attribute.to_sym].merge(options)
-    if options[:if] && !options[:unless] && !encrypted_value.nil? && !(encrypted_value.is_a?(String) && encrypted_value.empty?)
-      encrypted_value = encrypted_value.unpack(options[:encode]).first if options[:encode]
-      value = options[:encryptor].send(options[:decrypt_method], options.merge!(:value => encrypted_value))
+    unless options[:key].is_a?(String)
+      tenant_id = Tenant.current_tenant && Tenant.current_tenant.id
+      options[:key] = TenantEncryption.tenants_current_encryption_key(tenant_id)
+    end
+
+    # KD Jan-14. Decrypt strings only (its supposed to be encoded as base64)
+    if options[:if] && !options[:unless] && !encrypted_value.nil? && encrypted_value.is_a?(String) && !encrypted_value.empty?
+      unpacked_value = encrypted_value.unpack(options[:encode]).first if options[:encode]
+      value = options[:encryptor].send(options[:decrypt_method], options.merge!(:value => unpacked_value))
       if options[:marshal]
         value = options[:marshaler].send(options[:load_method], value)
       elsif defined?(Encoding)
