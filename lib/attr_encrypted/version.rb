@@ -1,7 +1,7 @@
 module AttrEncrypted
   # Contains information about this gem's version
   module Version
-    MAJOR = 1
+    MAJOR = 101
     MINOR = 3
     PATCH = 2
 
